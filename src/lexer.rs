@@ -54,7 +54,7 @@ fn create_regex() -> HashMap<String, Regex> {
 
     hm.insert(
         format!("string"),
-        Regex::new(format!(r#"([^"\\]|(\\")|(\\\\))*""#).as_str()).unwrap(),
+        Regex::new(format!(r#""([^"\\]|(\\")|(\\\\)|(\\n)|(\\t)|(\\r))*""#).as_str()).unwrap(),
     );
 
     let sign = format!(r"(\+|-)?");
@@ -116,6 +116,7 @@ impl Lexer {
         continue_if_none!(self.read_character());
         continue_if_none!(self.read_boolean());
         continue_if_none!(self.read_number());
+        continue_if_none!(self.read_string());
 
         Err(LispErr::Lexer(format!(
             "Couldn't read token. cursor={}",
@@ -143,6 +144,20 @@ impl Lexer {
                 '\n' => return,
                 _ => {}
             }
+        }
+    }
+
+    fn read_string(&mut self) -> Result<Option<TokenKind>, LispErr> {
+        if let Some(v) = self.read_token(&String::from("string")) {
+            let v = v.replace("\\t", "\t");
+            let v = v.replace("\\n", "\n");
+            let v = v.replace("\\r", "\r");
+            let v = v.replace("\\\"", "\"");
+            let v = v.replace("\\\\", "\\");
+
+            Ok(Some(TokenKind::Str(v)))
+        } else {
+            Ok(None)
         }
     }
 
