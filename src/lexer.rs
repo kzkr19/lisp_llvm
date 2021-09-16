@@ -1,4 +1,7 @@
 use crate::types::{LispErr, Token, TokenKind};
+use regex::Regex;
+use std::cmp::max;
+use std::collections::HashMap;
 
 macro_rules! continue_if_none {
     ($x:expr) => {
@@ -15,6 +18,59 @@ pub struct Lexer {
     cursor: usize,
     tokens: Vec<Token>,
     token_index: usize,
+    regex_set: HashMap<String, Regex>,
+}
+
+fn create_regex() -> HashMap<String, Regex> {
+    let mut hm = HashMap::new();
+
+    hm.insert(
+        format!("boolean"),
+        Regex::new(format!(r"((#f)|(#t))").as_str()).unwrap(),
+    );
+    hm.insert(
+        format!("character"),
+        Regex::new(format!(r"(#\\)(.|(space)|(newline))").as_str()).unwrap(),
+    );
+
+    let letter = format!(r"[A-Za-z]");
+    let special_initial = format!(r"(!|\$|%|&|\*|/|:|<|=|>|\?|\^|_|~)");
+    let initial = format!("({}|{})", letter, special_initial);
+    let digit = format!(r"\d");
+    let special_subsequent = format!(r"(\+|-|\.|@)");
+    let subsequent = format!("({}|{}|{})", initial, digit, special_subsequent);
+
+    let peculiar_identifier = format!(r"(\+|-|>=|<=|<|>)");
+    hm.insert(
+        format!("identifier"),
+        Regex::new(format!("(({}({})*)|{})", initial, subsequent, peculiar_identifier).as_str())
+            .unwrap(),
+    );
+
+    hm.insert(
+        format!("symbol"),
+        Regex::new(format!(r"(\(|\)|(#\()|'|`|,@|,|\.)").as_str()).unwrap(),
+    );
+
+    hm.insert(
+        format!("string"),
+        Regex::new(format!(r#"([^"\\]|(\\")|(\\\\))*""#).as_str()).unwrap(),
+    );
+
+    let sign = format!(r"(\+|-)+");
+    for (radix, radix_hash, digit) in vec![
+        (2, "#b", "(0|1)"),
+        (8, "#o", "[0-7]"),
+        (10, "(#d)?", r"\d"),
+        (16, "#x", r"(\d|[a-fA-F])"),
+    ] {
+        hm.insert(
+            format!("integer_{}", radix),
+            Regex::new(format!(r"{}{}({})+", radix_hash, sign, digit).as_str()).unwrap(),
+        );
+    }
+
+    hm
 }
 
 impl Lexer {
@@ -24,6 +80,7 @@ impl Lexer {
             cursor: 0,
             tokens: vec![],
             token_index: 0,
+            regex_set: create_regex(),
         };
 
         lexer
@@ -33,6 +90,7 @@ impl Lexer {
 impl Lexer {
     pub fn read_all_tokens(&mut self) -> Result<(), LispErr> {
         loop {
+            self.skip_atmosphere();
             let cursor = self.cursor;
             if let Some(token) = self.read_next_token()? {
                 self.tokens.push(Token {
@@ -48,34 +106,13 @@ impl Lexer {
     }
 
     fn read_next_token(&mut self) -> Result<Option<TokenKind>, LispErr> {
-        self.skip_atmosphere();
         if self.is_eof() {
             return Ok(None);
         }
 
-        let current_cursor = self.cursor;
-
         continue_if_none!(self.read_identifier());
 
         Err(LispErr::NotImplemented)
-    }
-
-    fn consume_character(&mut self, expected_char: char) -> Result<(), LispErr> {
-        let c = self.peek_char(0);
-        if c.is_none() {
-            Err(LispErr::Lexer(format!(
-                "Expected {}, but we got EOF.",
-                expected_char
-            )))
-        } else if c.unwrap() == expected_char {
-            Ok(())
-        } else {
-            Err(LispErr::Lexer(format!(
-                "Expected {}, but we got {}.",
-                expected_char,
-                c.unwrap()
-            )))
-        }
     }
 
     fn skip_atmosphere(&mut self) {
@@ -102,13 +139,29 @@ impl Lexer {
     }
 
     fn read_identifier(&mut self) -> Result<Option<TokenKind>, LispErr> {
-        // let letter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        // let special_initial = "!$%&*/:<=>?^_~";
-        // let digit = "01234567889";
-        // let c = self.peek_char(0).unwrap();
+        if let Some(v) = self.read_token(&String::from("identifier")) {
+            Ok(Some(TokenKind::Identifier(v)))
+        } else {
+            Ok(None)
+        }
+    }
 
-        // TODO: not implemented!
-        Err(LispErr::NotImplemented)
+    fn read_token(&mut self, key: &String) -> Option<String> {
+        let s = &self.source[self.cursor..];
+        let result = self.regex_set[key].find(s);
+
+        if let Some(m) = result {
+            if m.start() == 0 {
+                let len = m.end() - m.start();
+                let token = String::from(&self.source[self.cursor..self.cursor + len]);
+                self.move_cursor(len as i64);
+                Some(token)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     fn peek_char(&self, nth: usize) -> Option<char> {
@@ -123,5 +176,10 @@ impl Lexer {
         if !self.is_eof() {
             self.cursor += 1;
         }
+    }
+
+    fn move_cursor(&mut self, n_step: i64) {
+        self.cursor = (self.cursor as i64 + n_step) as usize;
+        self.cursor = max(self.cursor, self.source.len());
     }
 }
