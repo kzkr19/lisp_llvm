@@ -3,7 +3,6 @@ pub enum TokenKind {
     Identifier(String), // def!,inc,dec,+,-,...
     Boolean(bool),
     Integer(i64),
-    Float(f64),
     Character(char),
     Str(String),
     Symbol(String), // [],(),{},`,',@,~,~@,^

@@ -57,7 +57,7 @@ fn create_regex() -> HashMap<String, Regex> {
         Regex::new(format!(r#"([^"\\]|(\\")|(\\\\))*""#).as_str()).unwrap(),
     );
 
-    let sign = format!(r"(\+|-)+");
+    let sign = format!(r"(\+|-)?");
     for (radix, radix_hash, digit) in vec![
         (2, "#b", "(0|1)"),
         (8, "#o", "[0-7]"),
@@ -100,8 +100,8 @@ impl Lexer {
             } else {
                 break;
             }
-            println!("{:?}", self.tokens);
         }
+        println!("{:?}", self.tokens);
 
         Ok(())
     }
@@ -115,8 +115,12 @@ impl Lexer {
         continue_if_none!(self.read_symbol());
         continue_if_none!(self.read_character());
         continue_if_none!(self.read_boolean());
+        continue_if_none!(self.read_number());
 
-        Err(LispErr::NotImplemented)
+        Err(LispErr::Lexer(format!(
+            "Couldn't read token. cursor={}",
+            self.cursor
+        )))
     }
 
     fn skip_atmosphere(&mut self) {
@@ -184,6 +188,29 @@ impl Lexer {
         } else {
             Ok(None)
         }
+    }
+
+    fn read_number(&mut self) -> Result<Option<TokenKind>, LispErr> {
+        // TODO: remove magic numbers
+        for radix in vec![2, 8, 10, 16] {
+            let key = format!("integer_{}", radix);
+            if let Some(v) = self.read_token(&key) {
+                let num = if v.starts_with("#") {
+                    v[2..].to_string()
+                } else {
+                    v
+                };
+
+                return match i64::from_str_radix(num.as_str(), radix) {
+                    Ok(val) => Ok(Some(TokenKind::Integer(val))),
+                    Err(_) => Err(LispErr::Lexer(format!(
+                        "Failed to parse \"{}\" in radix {}",
+                        num, radix
+                    ))),
+                };
+            }
+        }
+        Ok(None)
     }
 
     fn read_token(&mut self, key: &String) -> Option<String> {
