@@ -1,6 +1,6 @@
 use crate::types::{LispErr, Token, TokenKind};
 use regex::Regex;
-use std::cmp::max;
+use std::cmp::min;
 use std::collections::HashMap;
 
 macro_rules! continue_if_none {
@@ -100,6 +100,7 @@ impl Lexer {
             } else {
                 break;
             }
+            println!("{:?}", self.tokens);
         }
 
         Ok(())
@@ -113,6 +114,7 @@ impl Lexer {
         continue_if_none!(self.read_identifier());
         continue_if_none!(self.read_symbol());
         continue_if_none!(self.read_character());
+        continue_if_none!(self.read_boolean());
 
         Err(LispErr::NotImplemented)
     }
@@ -169,6 +171,21 @@ impl Lexer {
         }
     }
 
+    fn read_boolean(&mut self) -> Result<Option<TokenKind>, LispErr> {
+        if let Some(v) = self.read_token(&String::from("boolean")) {
+            match v.as_str() {
+                "#t" => Ok(Some(TokenKind::Boolean(true))),
+                "#f" => Ok(Some(TokenKind::Boolean(false))),
+                _ => Err(LispErr::Lexer(format!(
+                    "Unkown string received when reading boolean: {}",
+                    v
+                ))),
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
     fn read_token(&mut self, key: &String) -> Option<String> {
         let s = &self.source[self.cursor..];
         let result = self.regex_set[key].find(s);
@@ -203,6 +220,6 @@ impl Lexer {
 
     fn move_cursor(&mut self, n_step: i64) {
         self.cursor = (self.cursor as i64 + n_step) as usize;
-        self.cursor = max(self.cursor, self.source.len());
+        self.cursor = min(self.cursor, self.source.len());
     }
 }
