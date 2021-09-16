@@ -1,6 +1,5 @@
 use std::env;
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 pub mod lexer;
@@ -15,6 +14,7 @@ fn main() {
         Err(LispErr::Command(s)) => println!("command error:{}", s),
         Err(LispErr::IO(s)) => println!("io error:{}", s),
         Err(LispErr::Lexer(s)) => println!("lexer error:{}", s),
+        Err(LispErr::NotImplemented) => println!("not implemented!"),
     }
 }
 
