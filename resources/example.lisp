@@ -22,3 +22,7 @@
   (cond ((null? xs) '())
         ((p (car xs)) (cons (car xs) (filter p (cdr xs))))
         (else (filter p (cdr xs)))))
+
+(define test-list 
+  (list #\a #\b #\space 25 +58 #b10 #o10 #d10 #x10
+        "string" "st" "adaf\"\\" #f #t))
