@@ -14,3 +14,10 @@ pub struct Token {
     pub start: usize,
     pub end: usize,
 }
+
+#[derive(Debug)]
+pub enum LispErr {
+    Command(String),
+    IO(String),
+    Lexer(String),
+}
