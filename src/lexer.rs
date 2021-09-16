@@ -24,50 +24,40 @@ pub struct Lexer {
 fn create_regex() -> HashMap<String, Regex> {
     let mut hm = HashMap::new();
 
-    hm.insert(
-        format!("boolean"),
-        Regex::new(format!(r"((#f)|(#t))").as_str()).unwrap(),
-    );
-    hm.insert(
-        format!("character"),
-        Regex::new(format!(r"(#\\)(.|(space)|(newline))").as_str()).unwrap(),
-    );
+    hm.insert(format!("boolean"), Regex::new(r"((#f)|(#t))").unwrap());
+    let character = r"(#\\)(.|(space)|(newline))";
+    hm.insert(format!("character"), Regex::new(character).unwrap());
 
-    let letter = format!(r"[A-Za-z]");
-    let special_initial = format!(r"(!|\$|%|&|\*|/|:|<|=|>|\?|\^|_|~)");
+    let letter = r"[A-Za-z]";
+    let special_initial = r"(!|\$|%|&|\*|/|:|<|=|>|\?|\^|_|~)";
     let initial = format!("({}|{})", letter, special_initial);
-    let digit = format!(r"\d");
-    let special_subsequent = format!(r"(\+|-|\.|@)");
+    let digit = r"\d";
+    let special_subsequent = r"(\+|-|\.|@)";
     let subsequent = format!("({}|{}|{})", initial, digit, special_subsequent);
 
-    let peculiar_identifier = format!(r"(\+|-|>=|<=|<|>)");
+    let peculiar_identifier = r"(\+|-|>=|<=|<|>)";
+    let identifier = format!("(({}({})*)|{})", initial, subsequent, peculiar_identifier);
     hm.insert(
         format!("identifier"),
-        Regex::new(format!("(({}({})*)|{})", initial, subsequent, peculiar_identifier).as_str())
-            .unwrap(),
+        Regex::new(identifier.as_str()).unwrap(),
     );
 
-    hm.insert(
-        format!("symbol"),
-        Regex::new(format!(r"(\(|\)|(#\()|'|`|,@|,|\.)").as_str()).unwrap(),
-    );
+    let symbol = r"(\(|\)|(#\()|'|`|,@|,|\.)";
+    hm.insert(format!("symbol"), Regex::new(symbol).unwrap());
 
-    hm.insert(
-        format!("string"),
-        Regex::new(format!(r#""([^"\\]|(\\")|(\\\\)|(\\n)|(\\t)|(\\r))*""#).as_str()).unwrap(),
-    );
+    let string_r = r#""([^"\\]|(\\")|(\\\\)|(\\n)|(\\t)|(\\r))*""#;
+    hm.insert(format!("string"), Regex::new(string_r).unwrap());
 
-    let sign = format!(r"(\+|-)?");
+    let sign = r"(\+|-)?";
     for (radix, radix_hash, digit) in vec![
         (2, "#b", "(0|1)"),
         (8, "#o", "[0-7]"),
         (10, "(#d)?", r"\d"),
         (16, "#x", r"(\d|[a-fA-F])"),
     ] {
-        hm.insert(
-            format!("integer_{}", radix),
-            Regex::new(format!(r"{}{}({})+", radix_hash, sign, digit).as_str()).unwrap(),
-        );
+        let key = format!("integer_{}", radix);
+        let int_regex = format!(r"{}{}({})+", radix_hash, sign, digit);
+        hm.insert(key, Regex::new(int_regex.as_str()).unwrap());
     }
 
     hm
