@@ -111,6 +111,8 @@ impl Lexer {
         }
 
         continue_if_none!(self.read_identifier());
+        continue_if_none!(self.read_symbol());
+        continue_if_none!(self.read_character());
 
         Err(LispErr::NotImplemented)
     }
@@ -141,6 +143,27 @@ impl Lexer {
     fn read_identifier(&mut self) -> Result<Option<TokenKind>, LispErr> {
         if let Some(v) = self.read_token(&String::from("identifier")) {
             Ok(Some(TokenKind::Identifier(v)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_symbol(&mut self) -> Result<Option<TokenKind>, LispErr> {
+        if let Some(v) = self.read_token(&String::from("symbol")) {
+            Ok(Some(TokenKind::Symbol(v)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_character(&mut self) -> Result<Option<TokenKind>, LispErr> {
+        if let Some(v) = self.read_token(&String::from("character")) {
+            let c = match v.as_str() {
+                "#\\space" => ' ',
+                "#\\newline" => '\n',
+                v => v.chars().nth(2).unwrap(),
+            };
+            Ok(Some(TokenKind::Character(c)))
         } else {
             Ok(None)
         }
