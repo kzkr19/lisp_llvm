@@ -24,5 +24,5 @@
         (else (filter p (cdr xs)))))
 
 (define test-list 
-  (list #\a #\b #\space 25 +58 #b10 #o10 #d10 #x10
+  (list #\a #\b #\space 25 +58 #b10 #o10 #d10 #x10 #xFF #xff
         "string" "st" "adaf\"\\" #f #t))
