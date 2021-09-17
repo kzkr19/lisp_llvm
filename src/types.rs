@@ -12,6 +12,7 @@ pub enum TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     pub start: usize,
+    pub end: usize,
 }
 
 #[derive(Debug)]

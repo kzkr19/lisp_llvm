@@ -86,12 +86,13 @@ impl Lexer {
                 self.tokens.push(Token {
                     kind: token,
                     start: cursor,
+                    end: self.cursor,
                 });
             } else {
                 break;
             }
         }
-        println!("{:?}", self.tokens);
+        // println!("{:?}", self.tokens);
 
         Ok(())
     }
