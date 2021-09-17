@@ -24,9 +24,9 @@ pub struct Lexer {
 fn create_regex() -> HashMap<String, Regex> {
     let mut hm = HashMap::new();
 
-    hm.insert(format!("boolean"), Regex::new(r"((#f)|(#t))").unwrap());
+    hm.insert("boolean".to_string(), Regex::new(r"((#f)|(#t))").unwrap());
     let character = r"(#\\)(.|(space)|(newline))";
-    hm.insert(format!("character"), Regex::new(character).unwrap());
+    hm.insert("character".to_string(), Regex::new(character).unwrap());
 
     let letter = r"[A-Za-z]";
     let special_initial = r"(!|\$|%|&|\*|/|:|<|=|>|\?|\^|_|~)";
@@ -38,15 +38,15 @@ fn create_regex() -> HashMap<String, Regex> {
     let peculiar_identifier = r"(\+|-|>=|<=|<|>)";
     let identifier = format!("(({}({})*)|{})", initial, subsequent, peculiar_identifier);
     hm.insert(
-        format!("identifier"),
+        "identifier".to_string(),
         Regex::new(identifier.as_str()).unwrap(),
     );
 
     let symbol = r"(\(|\)|(#\()|'|`|,@|,|\.)";
-    hm.insert(format!("symbol"), Regex::new(symbol).unwrap());
+    hm.insert("symbol".to_string(), Regex::new(symbol).unwrap());
 
     let string_r = r#""([^"\\]|(\\")|(\\\\)|(\\n)|(\\t)|(\\r))*""#;
-    hm.insert(format!("string"), Regex::new(string_r).unwrap());
+    hm.insert("string".to_string(), Regex::new(string_r).unwrap());
 
     let sign = r"(\+|-)?";
     for (radix, radix_hash, digit) in vec![
