@@ -13,6 +13,7 @@ typedef enum _LispType
     TYPE_NIL,
     TYPE_BOOL,
     TYPE_CONS,
+    TYPE_FUNC,
 } LispType;
 
 typedef struct _Nil
@@ -31,6 +32,12 @@ typedef struct _Cons
     LispData *car;
     LispData *cdr;
 } Cons;
+
+typedef struct _Func
+{
+    char *name;
+    LispData *((*f)(LispData *));
+} Func;
 
 typedef struct _Range
 {
@@ -52,6 +59,8 @@ const char *type_to_string(LispType type)
         return "bool";
     else if (type == TYPE_CONS)
         return "conscell";
+    else if (type == TYPE_FUNC)
+        return "procedure";
     else
         return "unkown_type";
 }
@@ -70,53 +79,13 @@ size_t get_memory_size(LispData *data)
         return sizeof(bool);
     else if (data->type == TYPE_CONS)
         return sizeof(Cons);
+    else if (data->type == TYPE_FUNC)
+        return sizeof(Func);
     else
     {
         printf("runtime error: unkown data type found\n");
         exit(1);
     }
-}
-
-char *data_to_string(LispData *data)
-{
-    size_t s = get_memory_size(data);
-    char *buff = (char *)malloc((2 * s + 32) * sizeof(char)); // TODO:free buffer...
-    const char *typename = type_to_string(data->type);
-
-    if (data->type == TYPE_INTEGER)
-    {
-        sprintf(buff, "LispData{type=%s, data=%" PRId64 "}", typename, *(int64_t *)(data->data));
-    }
-    else if (data->type == TYPE_STRING)
-    {
-        // TODO: implement later
-        sprintf(buff, "LispData{type=%s, data=xxx}", typename);
-    }
-    else if (data->type == TYPE_CHAR)
-    {
-        sprintf(buff, "LispData{type=%s, data='%c'}", typename, *(char *)(data->data));
-    }
-    else if (data->type == TYPE_NIL)
-    {
-        sprintf(buff, "LispData{type=%s}", typename);
-    }
-    else if (data->type == TYPE_BOOL)
-    {
-        char *t_or_f = *(bool *)(data->data) ? "#t" : "#f";
-        sprintf(buff, "LispData{type=%s, data=%s}", typename, t_or_f);
-    }
-    else if (data->type == TYPE_CONS)
-    {
-        // TODO: display inside?
-        Cons *c = data->data;
-        sprintf(buff, "LispData{type=%s, data={%p,%p}}", typename, (void *)c->car, (void *)c->cdr);
-    }
-    else
-    {
-        sprintf(buff, "LispData{type=unknown}");
-    }
-
-    return buff;
 }
 
 LispData *create_integer(const int64_t n)
@@ -182,6 +151,20 @@ LispData *create_list(LispData *xs[], size_t size)
     }
 
     return ret;
+}
+
+LispData *create_func(LispData *(*f)(LispData *), const char *name)
+{
+    LispData *val0 = (LispData *)malloc(sizeof(LispData));
+    Func *data = (Func *)malloc(sizeof(Func));
+    data->f = f;
+    data->name = (char *)malloc((strlen(name) + 1) * sizeof(char));
+    strcpy(data->name, name);
+
+    val0->type = TYPE_FUNC;
+    val0->data = (void *)data;
+
+    return val0;
 }
 
 LispData *copy_data(LispData *original)
@@ -433,6 +416,8 @@ void display_core(LispData *data, bool start)
             printf(" ");
         display_core(cons->cdr, false);
     }
+    else if (data->type == TYPE_FUNC)
+        printf("#<procedure:%s>", ((Func *)data->data)->name);
     else
     {
         printf("runtime error: unknown data type");
@@ -473,5 +458,7 @@ int main()
     lisp_display(create_list((LispData *[]){g}, 1));
     LispData *h = lisp_number_sub(xs);
     lisp_display(create_list((LispData *[]){h}, 1));
+    LispData *i = create_func(lisp_display, "display");
+    lisp_display(create_list((LispData *[]){i}, 1));
     return 0;
 }
