@@ -327,6 +327,63 @@ LispData *lisp_number_equal(LispData *args)
     return create_bool(flag);
 }
 
+// +
+LispData *lisp_number_add(LispData *args)
+{
+    size_t len = list_length(args);
+    int64_t n = 0;
+
+    for (int i = 0; i < len; i++)
+    {
+        LispData *s = fetch_nth_arg(args, i);
+
+        if (s->type != TYPE_INTEGER)
+        {
+            printf("runtime error: "
+                   "invalid type of argument"
+                   "(all element should be integer in +, but we got %s)",
+                   type_to_string(s->type));
+            exit(0);
+        }
+
+        n += *(int *)(s->data);
+    }
+
+    return create_integer(n);
+}
+
+// -
+LispData *lisp_number_sub(LispData *args)
+{
+    size_t len = list_length(args);
+    if (len == 0)
+    {
+        printf("runtime error: "
+               "invalid number of argument"
+               "(we need at lest 1, we got 0 in function =)");
+        exit(0);
+    }
+    int64_t n = 0;
+
+    for (int i = 0; i < len; i++)
+    {
+        LispData *s = fetch_nth_arg(args, i);
+
+        if (s->type != TYPE_INTEGER)
+        {
+            printf("runtime error: "
+                   "invalid type of argument"
+                   "(all element should be integer in -, but we got %s)",
+                   type_to_string(s->type));
+            exit(0);
+        }
+        int temp = *(int *)(s->data);
+        n = i == 0 ? temp : n - temp;
+    }
+
+    return create_integer(n);
+}
+
 int main()
 {
     LispData *v1 = create_integer(1);
