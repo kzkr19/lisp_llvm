@@ -85,7 +85,7 @@ char *data_to_string(LispData *data)
 
     if (data->type == TYPE_INTEGER)
     {
-        sprintf(buff, "LispData{type=%s, data=%d}", typename, *(int *)(data->data));
+        sprintf(buff, "LispData{type=%s, data=%" PRId64 "}", typename, *(int64_t *)(data->data));
     }
     else if (data->type == TYPE_STRING)
     {
@@ -167,14 +167,18 @@ LispData *create_nil()
 
 LispData *create_list(LispData *xs[], size_t size)
 {
+    if (size == 0)
+        return create_nil();
+
     LispData *ret = create_cons();
     LispData *cursor = ret;
 
     for (int i = 0; i < size; i++)
     {
-        LispData *temp = (i == size - 1) ? create_nil() : create_cons();
+        LispData *temp = (i == (size - 1)) ? create_nil() : create_cons();
         ((Cons *)(cursor->data))->car = xs[i];
         ((Cons *)(cursor->data))->cdr = temp;
+        cursor = temp;
     }
 
     return ret;
@@ -196,13 +200,9 @@ int list_length(LispData *data)
     LispData *cursor = data;
     size_t count = 0;
 
-    while (true)
+    while (cursor->type != TYPE_NIL)
     {
-        if (cursor->type == TYPE_NIL)
-        {
-            break;
-        }
-        else if (cursor->type == TYPE_CONS)
+        if (cursor->type == TYPE_CONS)
         {
             Cons *temp = (Cons *)cursor->data;
             cursor = temp->cdr;
@@ -356,6 +356,7 @@ LispData *lisp_number_add(LispData *args)
 LispData *lisp_number_sub(LispData *args)
 {
     size_t len = list_length(args);
+    printf("%zu\n", len);
     if (len == 0)
     {
         printf("runtime error: "
@@ -394,5 +395,9 @@ int main()
     printf("%s\n", data_to_string(xs));
     LispData *f = lisp_number_equal(xs);
     printf("%s\n", data_to_string(f));
+    LispData *g = lisp_number_add(xs);
+    printf("%s\n", data_to_string(g));
+    LispData *h = lisp_number_sub(xs);
+    printf("%s\n", data_to_string(h));
     return 0;
 }
