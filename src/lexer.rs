@@ -102,6 +102,8 @@ impl Lexer {
             return Ok(None);
         }
 
+        // try to read all kind of token
+        // if it successed, return it
         continue_if_none!(self.read_identifier());
         continue_if_none!(self.read_symbol());
         continue_if_none!(self.read_character());
@@ -109,6 +111,7 @@ impl Lexer {
         continue_if_none!(self.read_number());
         continue_if_none!(self.read_string());
 
+        // TODO: error visualization
         Err(LispErr::Lexer(format!(
             "Couldn't read token. cursor={}",
             self.cursor
@@ -140,6 +143,7 @@ impl Lexer {
 
     fn read_string(&mut self) -> Result<Option<TokenKind>, LispErr> {
         if let Some(v) = self.read_token(&String::from("string")) {
+            // TODO: make below code better
             let v = v.replace("\\t", "\t");
             let v = v.replace("\\n", "\n");
             let v = v.replace("\\r", "\r");
