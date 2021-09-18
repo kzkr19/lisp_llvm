@@ -408,6 +408,38 @@ LispData *lisp_bool_or(LispData *args)
     return create_bool(f);
 }
 
+void display_core(LispData *data, bool start)
+{
+    if (data->type == TYPE_INTEGER)
+        printf("%" PRId64 "", *(int64_t *)(data->data));
+    else if (data->type == TYPE_STRING)
+        printf("%s", (char *)data->data);
+    else if (data->type == TYPE_CHAR)
+        printf("%c", *(char *)data->data);
+    else if (data->type == TYPE_NIL)
+        printf("%s", start ? "()" : ")");
+    else if (data->type == TYPE_BOOL)
+        printf("%s", *(bool *)(data->data) ? "#t" : "#f");
+    else if (data->type == TYPE_CONS)
+    {
+        Cons *cons = (Cons *)(data->data);
+        bool pair = cons->cdr->type != TYPE_NIL && cons->cdr->type != TYPE_CONS;
+        if (start || pair)
+            printf("(");
+        display_core(cons->car, true);
+        if (pair)
+            printf(". ");
+        else if (cons->cdr->type != TYPE_NIL)
+            printf(" ");
+        display_core(cons->cdr, false);
+    }
+    else
+    {
+        printf("runtime error: unknown data type");
+        exit(0);
+    }
+}
+
 LispData *lisp_display(LispData *args)
 {
     size_t len = list_length(args);
@@ -421,21 +453,8 @@ LispData *lisp_display(LispData *args)
     }
 
     LispData *data = fetch_nth_arg(args, 0);
-
-    if (data->type == TYPE_INTEGER)
-        printf("%" PRId64 "\n", *(int64_t *)(data->data));
-    else if (data->type == TYPE_STRING)
-        printf("%s\n", (char *)data->data);
-    else if (data->type == TYPE_CHAR)
-        printf("%c\n", *(char *)data->data);
-    else if (data->type == TYPE_NIL)
-        printf("()\n");
-    else if (data->type == TYPE_BOOL)
-        printf("%s\n", *(bool *)(data->data) ? "#t" : "#f");
-    else if (data->type == TYPE_CONS)
-        printf("cons\n"); // TODO: display inside?
-    else
-        printf("unknown data type");
+    display_core(data, true);
+    printf("\n");
 
     return create_bool(false);
 }
