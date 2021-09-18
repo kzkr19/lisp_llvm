@@ -356,7 +356,6 @@ LispData *lisp_number_add(LispData *args)
 LispData *lisp_number_sub(LispData *args)
 {
     size_t len = list_length(args);
-    printf("%zu\n", len);
     if (len == 0)
     {
         printf("runtime error: "
@@ -385,19 +384,75 @@ LispData *lisp_number_sub(LispData *args)
     return create_integer(n);
 }
 
+// or
+LispData *lisp_bool_or(LispData *args)
+{
+    size_t len = list_length(args);
+    bool f = false;
+
+    for (int i = 0; i < len; i++)
+    {
+        LispData *s = fetch_nth_arg(args, i);
+
+        if (s->type != TYPE_BOOL)
+        {
+            printf("runtime error: "
+                   "invalid type of argument"
+                   "(all element should be bool in or, but we got %s)",
+                   type_to_string(s->type));
+            exit(0);
+        }
+        f |= *(bool *)(s->data);
+    }
+
+    return create_bool(f);
+}
+
+LispData *lisp_display(LispData *args)
+{
+    size_t len = list_length(args);
+    if (len != 1)
+    {
+        printf("runtime error: "
+               "invalid number of argument"
+               "(we need exactly 1, we got %zu in function display)",
+               len);
+        exit(0);
+    }
+
+    LispData *data = fetch_nth_arg(args, 0);
+
+    if (data->type == TYPE_INTEGER)
+        printf("%" PRId64 "\n", *(int64_t *)(data->data));
+    else if (data->type == TYPE_STRING)
+        printf("%s\n", (char *)data->data);
+    else if (data->type == TYPE_CHAR)
+        printf("%c\n", *(char *)data->data);
+    else if (data->type == TYPE_NIL)
+        printf("()\n");
+    else if (data->type == TYPE_BOOL)
+        printf("%s\n", *(bool *)(data->data) ? "#t" : "#f");
+    else if (data->type == TYPE_CONS)
+        printf("cons\n"); // TODO: display inside?
+    else
+        printf("unknown data type");
+
+    return create_bool(false);
+}
+
 int main()
 {
     LispData *v1 = create_integer(1);
-    printf("%s\n", data_to_string(v1));
+    lisp_display(create_list((LispData *[]){v1}, 1));
     LispData *v2 = create_integer(2);
-    printf("%s\n", data_to_string(v2));
+    lisp_display(create_list((LispData *[]){v2}, 1));
     LispData *xs = create_list((LispData *[]){v1, v2}, 2);
-    printf("%s\n", data_to_string(xs));
+    lisp_display(create_list((LispData *[]){xs}, 1));
     LispData *f = lisp_number_equal(xs);
-    printf("%s\n", data_to_string(f));
+    lisp_display(create_list((LispData *[]){f}, 1));
     LispData *g = lisp_number_add(xs);
-    printf("%s\n", data_to_string(g));
+    lisp_display(create_list((LispData *[]){g}, 1));
     LispData *h = lisp_number_sub(xs);
-    printf("%s\n", data_to_string(h));
+    lisp_display(create_list((LispData *[]){h}, 1));
     return 0;
 }
