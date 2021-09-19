@@ -152,7 +152,10 @@ impl Parser {
                 Expression::Value(TokenKind::Identifier("lambda".to_string()), range),
                 args_list,
                 // returns last one
-                Expression::Value(format!("__begin_x{}", xs.len() - 1), range),
+                Expression::Value(
+                    TokenKind::Identifier(format!("__begin_x{}", xs.len() - 1)),
+                    range,
+                ),
             ],
             range,
         );
@@ -176,14 +179,15 @@ impl Parser {
         }
 
         let first = xs.pop().unwrap();
+        let r = first.get_range();
 
         Ok(Expression::List(
             vec![
-                Expression::Value(TokenKind::Identifier("if".to_string()), xs[0].get_range()),
+                Expression::Value(TokenKind::Identifier("if".to_string()), r),
                 first,
-                Expression::Value(TokenKind::Boolean(true), range),
+                Expression::Value(TokenKind::Boolean(true), r),
                 if xs.len() == 0 {
-                    Expression::Value(TokenKind::Boolean(false), range)
+                    Expression::Value(TokenKind::Boolean(false), r)
                 } else {
                     self.expand_or(xs, range)?
                 },
