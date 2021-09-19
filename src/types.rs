@@ -16,9 +16,9 @@ pub struct Token {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub enum LispData {
+pub enum Expression {
     Value(Token),
-    List(Vec<LispData>, usize, usize),
+    List(Vec<Expression>, usize, usize),
 }
 
 #[derive(Debug)]
@@ -26,5 +26,7 @@ pub enum LispErr {
     Command(String),
     IO(String),
     Lexer(String),
+    Parser(String),
+    NotSupported(String),
     NotImplemented,
 }

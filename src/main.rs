@@ -16,6 +16,8 @@ fn main() {
         Err(LispErr::Command(s)) => println!("command error:{}", s),
         Err(LispErr::IO(s)) => println!("io error:{}", s),
         Err(LispErr::Lexer(s)) => println!("lexer error:{}", s),
+        Err(LispErr::Parser(s)) => println!("parser error:{}", s),
+        Err(LispErr::NotSupported(s)) => println!("not supported error: {}", s),
         Err(LispErr::NotImplemented) => println!("not implemented!"),
     }
 }
