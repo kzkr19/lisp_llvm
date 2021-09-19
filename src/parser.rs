@@ -49,14 +49,58 @@ impl Parser {
                     "the symbol {} is not supported",
                     s
                 ))),
-                s => Err(LispErr::NotImplemented),
+                s => Err(LispErr::Parser(format!("found unknown symbol {}", s))),
             },
-            _ => Ok(Some(Expression::Value(token))),
+            _ => {
+                self.consume_one_token()?;
+                Ok(Some(Expression::Value(token)))
+            }
         }
     }
 
     fn parse_list(&mut self) -> Result<Option<Expression>, LispErr> {
-        Err(LispErr::NotImplemented)
+        let start = self.peek_token(0).unwrap().start;
+        self.consume_one_token()?; // consume (
+        let mut v = vec![];
+
+        loop {
+            let token = match self.peek_token(0) {
+                Some(v) => v,
+                None => {
+                    return Err(LispErr::Parser(format!(
+                        "reached end of tokens when parsing list"
+                    )))
+                }
+            };
+            match token.kind {
+                TokenKind::Symbol(symbol) => match symbol.as_str() {
+                    ")" => break,
+                    s if is_not_supported_symbol(s) => {
+                        return Err(LispErr::NotSupported(format!(
+                            "the symbol {} is not supported",
+                            s
+                        )))
+                    }
+                    _ => v.push(self.parse_expression()?.unwrap()),
+                },
+                _ => v.push(self.parse_expression()?.unwrap()),
+            }
+        }
+        let end = self.peek_token(0).unwrap().end;
+        self.consume_one_token()?; // consume )
+
+        Ok(Some(Expression::List(v, start, end)))
+    }
+
+    fn consume_one_token(&mut self) -> Result<(), LispErr> {
+        if self.index < self.tokens.len() {
+            self.index += 1;
+            Ok(())
+        } else {
+            Err(LispErr::Parser(
+                "Cannot consume token. We already reached the end of token".to_string(),
+            ))
+        }
     }
 
     fn peek_token(&self, n: usize) -> Option<Token> {
