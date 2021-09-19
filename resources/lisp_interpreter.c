@@ -439,7 +439,6 @@ LispData *lisp_display(LispData *args)
 
     LispData *data = fetch_nth_arg(args, 0);
     display_core(data, true);
-    printf("\n");
 
     return create_bool(false);
 }
