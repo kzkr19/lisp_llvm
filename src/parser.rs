@@ -1,4 +1,4 @@
-use crate::types::{Expression, LispErr, Token, TokenKind};
+use crate::types::{Expression, LispErr, SRange, Token, TokenKind};
 
 fn is_not_supported_symbol(symbol: &str) -> bool {
     let vec = vec!["#(", "'", "`", "'", "`", ",", ",@", "."];
@@ -53,13 +53,13 @@ impl Parser {
             },
             _ => {
                 self.consume_one_token()?;
-                Ok(Some(Expression::Value(token)))
+                Ok(Some(Expression::Value(token.kind, token.range)))
             }
         }
     }
 
     fn parse_list(&mut self) -> Result<Option<Expression>, LispErr> {
-        let start = self.peek_token(0).unwrap().start;
+        let start = self.peek_token(0).unwrap().range.start;
         self.consume_one_token()?; // consume (
         let mut v = vec![];
 
@@ -86,10 +86,71 @@ impl Parser {
                 _ => v.push(self.parse_expression()?.unwrap()),
             }
         }
-        let end = self.peek_token(0).unwrap().end;
+        let end = self.peek_token(0).unwrap().range.end;
         self.consume_one_token()?; // consume )
 
-        Ok(Some(Expression::List(v, start, end)))
+        Ok(Some(self.expand_derived_expression(
+            v,
+            SRange {
+                start: start,
+                end: end,
+            },
+        )?))
+    }
+
+    fn expand_derived_expression(
+        &self,
+        xs: Vec<Expression>,
+        range: SRange,
+    ) -> Result<Expression, LispErr> {
+        let mut xs = xs;
+        if xs.len() == 0 {
+            return Ok(Expression::List(xs, range));
+        }
+
+        match &xs[0] {
+            Expression::List(_, _) => Ok(Expression::List(xs, range)),
+            Expression::Value(x, _) => match x {
+                TokenKind::Identifier(ident) => match ident.as_str() {
+                    "and" => Err(LispErr::NotImplemented),
+                    "or" => {
+                        xs.remove(0);
+                        Ok(self.expand_or(xs, range)?)
+                    }
+                    "begin" => Err(LispErr::NotImplemented),
+                    "cond" => Err(LispErr::NotImplemented),
+                    "case" => Err(LispErr::NotImplemented),
+                    "let" => Err(LispErr::NotImplemented),
+                    "let*" => Err(LispErr::NotImplemented),
+                    "letrec" => Err(LispErr::NotImplemented),
+                    "delay" => Err(LispErr::NotImplemented),
+                    _ => Ok(Expression::List(xs, range)),
+                },
+                _ => Ok(Expression::List(xs, range)),
+            },
+        }
+    }
+
+    fn expand_or(&self, mut xs: Vec<Expression>, range: SRange) -> Result<Expression, LispErr> {
+        if xs.len() == 0 {
+            return Ok(Expression::Value(TokenKind::Boolean(true), range));
+        }
+
+        let first = xs.pop().unwrap();
+
+        Ok(Expression::List(
+            vec![
+                Expression::Value(TokenKind::Identifier("if".to_string()), xs[0].get_range()),
+                first,
+                Expression::Value(TokenKind::Boolean(true), range),
+                if xs.len() == 0 {
+                    Expression::Value(TokenKind::Boolean(false), range)
+                } else {
+                    self.expand_or(xs, range)?
+                },
+            ],
+            range,
+        ))
     }
 
     fn consume_one_token(&mut self) -> Result<(), LispErr> {

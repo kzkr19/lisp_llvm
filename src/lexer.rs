@@ -1,4 +1,4 @@
-use crate::types::{LispErr, Token, TokenKind};
+use crate::types::{LispErr, SRange, Token, TokenKind};
 use regex::Regex;
 use std::cmp::min;
 use std::collections::HashMap;
@@ -83,8 +83,10 @@ impl Lexer {
             if let Some(token) = self.read_next_token()? {
                 tokens.push(Token {
                     kind: token,
-                    start: cursor,
-                    end: self.cursor,
+                    range: SRange {
+                        start: cursor,
+                        end: self.cursor,
+                    },
                 });
             } else {
                 break;

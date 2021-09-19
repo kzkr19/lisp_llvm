@@ -8,17 +8,22 @@ pub enum TokenKind {
     Symbol(String), // [],(),{},`,',@,~,~@,^
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub struct Token {
-    pub kind: TokenKind,
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub struct SRange {
     pub start: usize,
     pub end: usize,
 }
 
 #[derive(PartialEq, Debug, Clone)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub range: SRange,
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expression {
-    Value(Token),
-    List(Vec<Expression>, usize, usize),
+    Value(TokenKind, SRange),
+    List(Vec<Expression>, SRange),
 }
 
 #[derive(Debug)]
@@ -29,4 +34,13 @@ pub enum LispErr {
     Parser(String),
     NotSupported(String),
     NotImplemented,
+}
+
+impl Expression {
+    pub fn get_range(&self) -> SRange {
+        match self {
+            Expression::Value(_, x) => *x,
+            Expression::List(_, x) => *x,
+        }
+    }
 }
