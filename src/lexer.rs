@@ -16,8 +16,6 @@ macro_rules! continue_if_none {
 pub struct Lexer {
     source: String,
     cursor: usize,
-    tokens: Vec<Token>,
-    token_index: usize,
     regex_set: HashMap<String, Regex>,
 }
 
@@ -68,8 +66,6 @@ impl Lexer {
         let lexer = Lexer {
             source: source,
             cursor: 0,
-            tokens: vec![],
-            token_index: 0,
             regex_set: create_regex(),
         };
 
@@ -78,12 +74,14 @@ impl Lexer {
 }
 
 impl Lexer {
-    pub fn read_all_tokens(&mut self) -> Result<(), LispErr> {
+    pub fn read_all_tokens(&mut self) -> Result<Vec<Token>, LispErr> {
+        let mut tokens = vec![];
+
         loop {
             self.skip_atmosphere();
             let cursor = self.cursor;
             if let Some(token) = self.read_next_token()? {
-                self.tokens.push(Token {
+                tokens.push(Token {
                     kind: token,
                     start: cursor,
                     end: self.cursor,
@@ -92,9 +90,8 @@ impl Lexer {
                 break;
             }
         }
-        // println!("{:?}", self.tokens);
 
-        Ok(())
+        Ok(tokens)
     }
 
     fn read_next_token(&mut self) -> Result<Option<TokenKind>, LispErr> {

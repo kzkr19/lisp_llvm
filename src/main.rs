@@ -3,9 +3,11 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 pub mod lexer;
+pub mod parser;
 pub mod types;
 
 use crate::lexer::Lexer;
+use crate::parser::Parser;
 use crate::types::LispErr;
 
 fn main() {
@@ -22,7 +24,9 @@ fn compile() -> Result<(), LispErr> {
     let fname = get_file_name()?;
     let source = read_code(fname)?;
     let mut lexer = Lexer::new(source);
-    lexer.read_all_tokens()?;
+    let tokens = lexer.read_all_tokens()?;
+    let mut parser = Parser::new(tokens);
+    let _ast = parser.parse()?;
 
     Ok(())
 }

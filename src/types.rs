@@ -15,6 +15,12 @@ pub struct Token {
     pub end: usize,
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum LispData {
+    Value(Token),
+    List(Vec<LispData>, usize, usize),
+}
+
 #[derive(Debug)]
 pub enum LispErr {
     Command(String),
