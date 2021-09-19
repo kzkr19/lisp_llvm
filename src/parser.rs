@@ -117,7 +117,7 @@ impl Parser {
                         xs.remove(0);
                         Ok(self.expand_or(xs, range)?)
                     }
-                    "begin" => Err(LispErr::NotImplemented),
+                    "begin" => self.expand_begin(xs, range),
                     "cond" => Err(LispErr::NotImplemented),
                     "case" => Err(LispErr::NotImplemented),
                     "let" => Err(LispErr::NotImplemented),
@@ -129,6 +129,45 @@ impl Parser {
                 _ => Ok(Expression::List(xs, range)),
             },
         }
+    }
+
+    fn expand_begin(&self, mut xs: Vec<Expression>, range: SRange) -> Result<Expression, LispErr> {
+        // convert (begin expr0 expr1) -> ((lambda (x0 x1) x1) expr0 expr1)
+        xs.remove(0);
+
+        if xs.len() == 0 {
+            return Ok(Expression::Value(TokenKind::Boolean(false), range));
+        }
+
+        // create list for argument of lambda (like (x0 x1))
+        let args_list = Expression::List(
+            (0..xs.len())
+                .map(|i| Expression::Value(TokenKind::Identifier(format!("__begin_x{}", i)), range))
+                .collect::<Vec<Expression>>(),
+            range,
+        );
+        // create definition of lambda(like (lambda (x0 x1) x1))
+        let def_of_lambda = Expression::List(
+            vec![
+                Expression::Value(TokenKind::Identifier("lambda".to_string()), range),
+                args_list,
+                // returns last one
+                Expression::Value(format!("__begin_x{}", xs.len() - 1), range),
+            ],
+            range,
+        );
+
+        // create list to call above lambda expression
+        let call_lambda = Expression::List(
+            {
+                let mut temp = vec![def_of_lambda];
+                temp.extend(xs);
+                temp
+            },
+            range,
+        );
+
+        Ok(call_lambda)
     }
 
     fn expand_or(&self, mut xs: Vec<Expression>, range: SRange) -> Result<Expression, LispErr> {
